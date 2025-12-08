@@ -1,0 +1,10 @@
+[project]
+name = "solarcontrol"
+version = "0.1.0"
+description = "Manage power usage for our house featuring Hoymiles HYS inverter and Emporia Pro EVSE"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "gpiozero>=2.0.1",
+    "pyemvue>=0.18.9",
+]
