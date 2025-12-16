@@ -49,15 +49,8 @@ def query_vue(vue_instance):
     print('device_gid channel_num name usage unit')
     print_recursive(device_usage_dict, device_info)
 
-
-# vue_login()
-# query_vue(VUE)
-
-async def main() -> None:
-
+async def query_inverter():
     dtu = DTU("192.168.1.5")
-
-    loop = asyncio.get_event_loop()
 
     dtu_response = await dtu.async_get_gateway_info()
     dtu_sn = dtu_response.serial_number
@@ -70,12 +63,35 @@ async def main() -> None:
         print(f"Flow: {dtu_response.power_flow}")
     else:
         print("No response from DTU")
+    
 
-    variables = globals().copy()
-    variables.update(locals())
+async def query_weather():
+    # Declare the client. The measuring unit used defaults to the metric system (celcius, km/h, etc.)
+    async with python_weather.Client(unit=python_weather.IMPERIAL) as client:
 
-    # shell = code.InteractiveConsole(variables)
-    # shell.interact()
+        # Fetch a weather forecast from a city.
+        weather = await client.get('Jamestown, Missouri, United States')
+
+        # Fetch the temperature for today.
+        print(f"Current Temperature: {weather.temperature}\nCurrent Conditions: {weather.kind}")
+
+        # Fetch weather forecast for upcoming days.
+        for daily in weather:
+            print(daily)
+
+
+
+async def main() -> None:
+
+    #vue_login()
+    #query_vue(VUE)
+
+    #await query_inverter()
+    await query_weather()
+
+
+
+
 
 asyncio.run(main())
 
