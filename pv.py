@@ -14,8 +14,6 @@ from hoymiles_wifi.dtu import DTU
 VUE = pyemvue.PyEmVue()
 
 
-
-
 def print_recursive(usage_dict, info, depth=0):
 
     for gid, device in usage_dict.items():
