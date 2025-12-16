@@ -55,29 +55,31 @@ def query_vue(vue_instance):
 # vue_login()
 # query_vue(VUE)
 
-dtu = DTU("192.168.1.5")
+async def main() -> None:
 
-loop = asyncio.get_event_loop()
+    dtu = DTU("192.168.1.5")
 
-dtu_response = loop.run_until_complete(dtu.async_get_gateway_info())
-dtu_sn = dtu_response.serial_number
-dtu_inverter_sn = dtu_response.mdevinfo[0].serial_number
+    loop = asyncio.get_event_loop()
 
-dtu_response = loop.run_until_complete(dtu.async_get_energy_storage_data(dtu_sn, dtu_inverter_sn))
+    dtu_response = await dtu.async_get_gateway_info()
+    dtu_sn = dtu_response.serial_number
+    dtu_inverter_sn = dtu_response.mdevinfo[0].serial_number
 
-if dtu_response:
-    print(f"Battery SoC: {dtu_response.battery_management.state_of_charge}")
-    print(f"Flow: {dtu_response.power_flow}")
-else:
-	print("No response from DTU")
+    dtu_response = await dtu.async_get_energy_storage_data(dtu_sn, dtu_inverter_sn)
 
-loop.close()
+    if dtu_response:
+        print(f"Battery SoC: {dtu_response.battery_management.state_of_charge}")
+        print(f"Flow: {dtu_response.power_flow}")
+    else:
+        print("No response from DTU")
 
-variables = globals().copy()
-variables.update(locals())
+    variables = globals().copy()
+    variables.update(locals())
 
-# shell = code.InteractiveConsole(variables)
-# shell.interact()
+    # shell = code.InteractiveConsole(variables)
+    # shell.interact()
+
+asyncio.run(main())
 
 
 
