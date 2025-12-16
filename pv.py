@@ -3,6 +3,8 @@ import code
 import readline
 import asyncio
 
+import python_weather
+
 import pyemvue
 import hoymiles_wifi
 

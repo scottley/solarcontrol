@@ -8,4 +8,5 @@ dependencies = [
     "gpiozero>=2.0.1",
     "hoymiles-wifi>=0.5.5",
     "pyemvue>=0.18.9",
+    "python-weather>=2.1.1",
 ]
