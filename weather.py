@@ -21,6 +21,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -28,7 +29,9 @@ from dataclasses import dataclass
 log = logging.getLogger(__name__)
 
 _NWS_BASE = "https://api.weather.gov"
-_TIMEOUT_S = 15
+_TIMEOUT_S = 30          # NWS forecast endpoints can be slow under load.
+_RETRIES = 2             # Total attempts = 1 + _RETRIES.
+_RETRY_BACKOFF_S = 2.0
 
 # Cached gridpoint metadata so we don't hit /points/ every poll.
 _points_cache: dict[tuple[float, float], dict] = {}
@@ -42,6 +45,7 @@ class WeatherReading:
 
 
 def _http_get_json(url: str, user_agent: str) -> dict:
+    """GET url and decode JSON, with retries on transient network errors."""
     req = urllib.request.Request(
         url,
         headers={
@@ -49,8 +53,24 @@ def _http_get_json(url: str, user_agent: str) -> dict:
             "Accept": "application/geo+json",
         },
     )
-    with urllib.request.urlopen(req, timeout=_TIMEOUT_S) as resp:  # noqa: S310 (https only)
-        return json.load(resp)
+    last_err: Exception | None = None
+    for attempt in range(_RETRIES + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=_TIMEOUT_S) as resp:  # noqa: S310
+                return json.load(resp)
+        except (urllib.error.URLError, TimeoutError) as e:
+            last_err = e
+            # urllib.error.HTTPError is a subclass of URLError; don't retry 4xx.
+            if isinstance(e, urllib.error.HTTPError) and 400 <= e.code < 500:
+                raise
+            if attempt < _RETRIES:
+                log.info("nws: %s on %s (attempt %d); retrying in %.1fs",
+                         type(e).__name__, url, attempt + 1, _RETRY_BACKOFF_S)
+                time.sleep(_RETRY_BACKOFF_S * (attempt + 1))
+                continue
+            raise
+    # unreachable, but mypy-quiet
+    raise last_err if last_err else RuntimeError("unreachable")
 
 
 def _c_to_f(c: float | None) -> float | None:
@@ -93,8 +113,10 @@ def _read_blocking(lat: float, lon: float, user_agent: str, location_name: str) 
             _put(metrics, "current.wind_speed_mph", None if wind_kmh is None else wind_kmh * 0.621371)
             if obs.get("textDescription"):
                 text["current.kind"] = obs["textDescription"]
+    except (urllib.error.URLError, TimeoutError) as e:
+        log.warning("nws: current observation fetch failed (will continue with forecast): %s", e)
     except Exception:
-        log.exception("nws: current observation fetch failed (continuing with forecast only)")
+        log.exception("nws: current observation fetch failed unexpectedly")
 
     # ---- Forecast (daytime periods only -> d0/d1/d2/...) ----
     try:
@@ -127,8 +149,12 @@ def _read_blocking(lat: float, lon: float, user_agent: str, location_name: str) 
                 text[f"{prefix}.detailed"] = day["detailedForecast"]
             day_idx += 1
             i += 2 if night else 1
+    except (urllib.error.URLError, TimeoutError) as e:
+        log.warning("nws: forecast fetch failed: %s", e)
+        if not metrics and not text:
+            return None
     except Exception:
-        log.exception("nws: forecast fetch failed")
+        log.exception("nws: forecast fetch failed unexpectedly")
         if not metrics and not text:
             return None
 
@@ -155,8 +181,10 @@ async def read(lat: float, lon: float, user_agent: str, location_name: str) -> W
     """Async wrapper. NWS is fast enough that running in a thread is fine."""
     try:
         return await asyncio.to_thread(_read_blocking, lat, lon, user_agent, location_name)
-    except urllib.error.URLError:
-        log.exception("nws: network error")
+    except (urllib.error.URLError, TimeoutError) as e:
+        # _read_blocking already catches its own URL/timeout errors per call;
+        # this only fires if the very first /points/ call exhausts its retries.
+        log.warning("nws: read failed: %s", e)
         return None
     except Exception:
         log.exception("nws: unexpected error")
