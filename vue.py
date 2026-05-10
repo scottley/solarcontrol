@@ -58,8 +58,12 @@ def _refresh_devices(client: pyemvue.PyEmVue) -> tuple[list[int], dict[int, obje
     return gids, info
 
 
-def read(keys_path: str) -> list[ChannelReading]:
-    """Single read of all Vue devices/channels. Returns minute-scale kWh per channel."""
+def read(keys_path: str, include_devices: set[str] | None = None) -> list[ChannelReading]:
+    """Single read of all Vue devices/channels. Returns minute-scale kWh per channel.
+
+    If `include_devices` is non-empty, only channels from those device_names
+    are returned (allowlist). If None or empty, all devices are included.
+    """
     global _client, _device_gids, _device_info
 
     if _client is None:
@@ -78,6 +82,14 @@ def read(keys_path: str) -> list[ChannelReading]:
 
     out: list[ChannelReading] = []
     _walk(usage, _device_info, out)
+
+    if include_devices:
+        before = len(out)
+        out = [c for c in out if c.device_name in include_devices]
+        dropped = before - len(out)
+        if dropped:
+            log.debug("vue: dropped %d channels not on the allowlist", dropped)
+
     return out
 
 

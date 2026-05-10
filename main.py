@@ -62,7 +62,9 @@ async def _poll_vue(cfg: Config, storage: Storage, stop: asyncio.Event) -> None:
     while not stop.is_set():
         try:
             # pyemvue is sync; run in a thread so we don't block other pollers.
-            channels = await asyncio.to_thread(vue.read, cfg.emporia_keys_file)
+            channels = await asyncio.to_thread(
+                vue.read, cfg.emporia_keys_file, cfg.included_vue_devices()
+            )
             storage.write(vue_points(channels))
             # Per-device "Mains" reading — the only one that's an authoritative
             # device-level total. Summing all channels would double-count (Mains

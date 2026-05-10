@@ -1,0 +1,19 @@
+# Grafana dashboard provider config. Installed to
+# /etc/grafana/provisioning/dashboards/solarcontrol.yaml.
+#
+# allowUiUpdates lets you edit the dashboard in the UI; remember to export and
+# commit your changes back to grafana/dashboards/solarcontrol.json if you want
+# them to survive a reinstall.
+apiVersion: 1
+
+providers:
+  - name: solarcontrol
+    orgId: 1
+    folder: ''
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/solarcontrol
+      foldersFromFilesStructure: false

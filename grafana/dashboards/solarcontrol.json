@@ -1,0 +1,246 @@
+{
+  "uid": "solarcontrol",
+  "title": "solarcontrol",
+  "tags": ["solarcontrol"],
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "1m",
+  "time": { "from": "now-24h", "to": "now" },
+  "timepicker": {},
+  "templating": { "list": [] },
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "PV Production",
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "type": "influxdb", "uid": "solarcontrol-influx" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "solarcontrol-influx" },
+          "query": "from(bucket: \"solarcontrol\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"hoymiles\" and r._field == \"pv.production\")\n  |> last()"
+        }
+      ],
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "fieldConfig": {
+        "defaults": { "unit": "watt", "decimals": 0, "color": { "mode": "fixed", "fixedColor": "yellow" } },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "House Load (Main Panel)",
+      "gridPos": { "x": 4, "y": 0, "w": 5, "h": 4 },
+      "datasource": { "type": "influxdb", "uid": "solarcontrol-influx" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "solarcontrol-influx" },
+          "query": "from(bucket: \"solarcontrol\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"vue\" and r._field == \"power_w\" and r.device == \"Main Panel\" and r.is_main == \"1\")\n  |> last()"
+        }
+      ],
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "fieldConfig": {
+        "defaults": { "unit": "watt", "decimals": 0, "color": { "mode": "fixed", "fixedColor": "blue" } },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "EVSE (Meggy)",
+      "gridPos": { "x": 9, "y": 0, "w": 5, "h": 4 },
+      "datasource": { "type": "influxdb", "uid": "solarcontrol-influx" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "solarcontrol-influx" },
+          "query": "from(bucket: \"solarcontrol\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"vue\" and r._field == \"power_w\" and r.device == \"Main Panel\" and r.name == \"Meggy\")\n  |> last()"
+        }
+      ],
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "fieldConfig": {
+        "defaults": { "unit": "watt", "decimals": 0, "color": { "mode": "fixed", "fixedColor": "purple" } },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Grid (+import / -export)",
+      "gridPos": { "x": 14, "y": 0, "w": 5, "h": 4 },
+      "datasource": { "type": "influxdb", "uid": "solarcontrol-influx" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "solarcontrol-influx" },
+          "query": "from(bucket: \"solarcontrol\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"hoymiles\" and r._field == \"grid.net\")\n  |> last()"
+        }
+      ],
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watt",
+          "decimals": 0,
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.1 },
+              { "color": "red", "value": 500 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "gauge",
+      "title": "Battery SoC",
+      "gridPos": { "x": 19, "y": 0, "w": 5, "h": 4 },
+      "datasource": { "type": "influxdb", "uid": "solarcontrol-influx" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "solarcontrol-influx" },
+          "query": "from(bucket: \"solarcontrol\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"hoymiles\" and r._field == \"battery.state_of_charge\")\n  |> last()"
+        }
+      ],
+      "options": { "showThresholdLabels": false, "showThresholdMarkers": true, "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 20 },
+              { "color": "green", "value": 50 }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Power flows",
+      "gridPos": { "x": 0, "y": 4, "w": 24, "h": 10 },
+      "datasource": { "type": "influxdb", "uid": "solarcontrol-influx" },
+      "targets": [
+        {
+          "refId": "PV",
+          "datasource": { "type": "influxdb", "uid": "solarcontrol-influx" },
+          "query": "from(bucket: \"solarcontrol\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"hoymiles\" and r._field == \"pv.production\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> set(key: \"_field\", value: \"PV\")"
+        },
+        {
+          "refId": "House",
+          "datasource": { "type": "influxdb", "uid": "solarcontrol-influx" },
+          "query": "from(bucket: \"solarcontrol\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"vue\" and r._field == \"power_w\" and r.device == \"Main Panel\" and r.is_main == \"1\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> set(key: \"_field\", value: \"House\")"
+        },
+        {
+          "refId": "EVSE",
+          "datasource": { "type": "influxdb", "uid": "solarcontrol-influx" },
+          "query": "from(bucket: \"solarcontrol\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"vue\" and r._field == \"power_w\" and r.device == \"Main Panel\" and r.name == \"Meggy\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> set(key: \"_field\", value: \"EVSE\")"
+        },
+        {
+          "refId": "Grid",
+          "datasource": { "type": "influxdb", "uid": "solarcontrol-influx" },
+          "query": "from(bucket: \"solarcontrol\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"hoymiles\" and r._field == \"grid.net\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> set(key: \"_field\", value: \"Grid (net)\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "watt", "custom": { "lineWidth": 1, "fillOpacity": 10, "showPoints": "never" } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "PV" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "yellow" } }] },
+          { "matcher": { "id": "byName", "options": "House" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "blue" } }] },
+          { "matcher": { "id": "byName", "options": "EVSE" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "purple" } }] },
+          { "matcher": { "id": "byName", "options": "Grid (net)" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }] }
+        ]
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    },
+    {
+      "id": 20,
+      "type": "timeseries",
+      "title": "Battery SoC",
+      "gridPos": { "x": 0, "y": 14, "w": 12, "h": 8 },
+      "datasource": { "type": "influxdb", "uid": "solarcontrol-influx" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "solarcontrol-influx" },
+          "query": "from(bucket: \"solarcontrol\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"hoymiles\" and r._field == \"battery.state_of_charge\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "percent", "min": 0, "max": 100, "custom": { "lineWidth": 2, "fillOpacity": 20, "showPoints": "never" }, "color": { "mode": "fixed", "fixedColor": "green" } },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "hidden" },
+        "tooltip": { "mode": "single", "sort": "none" }
+      }
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "Outside temperature",
+      "gridPos": { "x": 12, "y": 14, "w": 12, "h": 8 },
+      "datasource": { "type": "influxdb", "uid": "solarcontrol-influx" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "solarcontrol-influx" },
+          "query": "from(bucket: \"solarcontrol\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"weather\" and r._field == \"current.temperature_f\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "fahrenheit", "custom": { "lineWidth": 2, "fillOpacity": 10, "showPoints": "never" }, "color": { "mode": "fixed", "fixedColor": "orange" } },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "hidden" },
+        "tooltip": { "mode": "single", "sort": "none" }
+      }
+    },
+    {
+      "id": 30,
+      "type": "barchart",
+      "title": "Circuit usage (last 1h avg)",
+      "gridPos": { "x": 0, "y": 22, "w": 24, "h": 10 },
+      "datasource": { "type": "influxdb", "uid": "solarcontrol-influx" },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "influxdb", "uid": "solarcontrol-influx" },
+          "query": "from(bucket: \"solarcontrol\")\n  |> range(start: -1h)\n  |> filter(fn: (r) => r._measurement == \"vue\" and r._field == \"power_w\" and r.device == \"Main Panel\" and r.is_main == \"0\" and r.channel != \"Balance\")\n  |> group(columns: [\"name\"])\n  |> mean()\n  |> group()\n  |> sort(columns: [\"_value\"], desc: true)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "watt", "color": { "mode": "palette-classic" } },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always",
+        "xField": "name",
+        "legend": { "displayMode": "hidden" },
+        "tooltip": { "mode": "single", "sort": "none" }
+      }
+    }
+  ]
+}

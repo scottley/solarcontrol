@@ -49,6 +49,11 @@ class Config:
     # ---- Emporia Vue ----
     # Tokens are stored in this file; pyemvue rotates them in place.
     emporia_keys_file: str = "emporia_keys.json"
+    # Comma-separated allowlist of Vue device_names. If empty, all devices on
+    # the Emporia account are included. Match is exact on the device's display
+    # name as shown in the Emporia app.
+    # Example: VUE_INCLUDE_DEVICES="Main Panel"
+    vue_include_devices: str = ""
 
     # ---- Weather (NWS, api.weather.gov) ----
     # Coordinates of the site. Default is Jamestown, MO.
@@ -86,3 +91,7 @@ class Config:
                 "INFLUX_TOKEN is empty. Put it in /home/scott/solarcontrol/.env"
             )
         return self.influx_token
+
+    def included_vue_devices(self) -> set[str]:
+        """Allowlist set; empty means 'include all'."""
+        return {s.strip() for s in self.vue_include_devices.split(",") if s.strip()}
