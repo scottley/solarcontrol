@@ -39,6 +39,22 @@ if ! sudo cmp -s "${UNIT_SRC}" "${UNIT_DST}"; then
     sudo systemctl daemon-reload
 fi
 
+# Sync Grafana dashboards to the directory Grafana actually reads from.
+# Only fires if Grafana provisioning is already in place (install-services.sh
+# has run at least once). Grafana's file watcher picks up the change within
+# ~30s (set by updateIntervalSeconds in grafana/dashboards.yaml).
+GF_DIR=/var/lib/grafana/dashboards/solarcontrol
+if [[ -d "${GF_DIR}" ]]; then
+    for f in "${PI_REPO}/grafana/dashboards/"*.json; do
+        [[ -f "$f" ]] || continue
+        dst="${GF_DIR}/$(basename "$f")"
+        if ! sudo cmp -s "$f" "$dst" 2>/dev/null; then
+            echo "[pi] syncing dashboard $(basename "$f")"
+            sudo install -m 0644 -o grafana -g grafana "$f" "$dst"
+        fi
+    done
+fi
+
 echo "[pi] restart ${SERVICE_NAME}"
 sudo systemctl restart "${SERVICE_NAME}"
 sudo systemctl --no-pager --lines=0 status "${SERVICE_NAME}" || true
