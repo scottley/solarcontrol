@@ -1,0 +1,31 @@
+[Unit]
+Description=solarcontrol - solar/EVSE monitoring and control
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=scott
+Group=scott
+WorkingDirectory=/home/scott/solarcontrol
+# Run the project's venv python directly. uv populates .venv on every deploy via `uv sync`.
+ExecStart=/home/scott/solarcontrol/.venv/bin/python -u main.py
+# Optional non-secret env. Secrets (e.g., emporia_keys.json) live in WorkingDirectory.
+EnvironmentFile=-/home/scott/solarcontrol/.env
+
+# Restart policy
+Restart=on-failure
+RestartSec=5s
+
+# Logs go to journald: `journalctl -u solarcontrol -f`
+StandardOutput=journal
+StandardError=journal
+
+# Light hardening. Kept loose because gpiozero needs /dev/gpiomem and the user is in the gpio group.
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/home/scott/solarcontrol
+
+[Install]
+WantedBy=multi-user.target

@@ -11,4 +11,8 @@ wheels/
 
 # Secrets
 emporia_keys.json
+.env
+
+# Local deploy config
+deploy/.env.local
 
