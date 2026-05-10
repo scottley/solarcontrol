@@ -1,6 +1,6 @@
 [Unit]
 Description=solarcontrol - solar/EVSE monitoring and control
-After=network-online.target
+After=network-online.target influxdb.service
 Wants=network-online.target
 
 [Service]
@@ -10,7 +10,7 @@ Group=scott
 WorkingDirectory=/home/scott/solarcontrol
 # Run the project's venv python directly. uv populates .venv on every deploy via `uv sync`.
 ExecStart=/home/scott/solarcontrol/.venv/bin/python -u main.py
-# Optional non-secret env. Secrets (e.g., emporia_keys.json) live in WorkingDirectory.
+# Loads INFLUX_TOKEN and any other overrides. The "-" prefix makes the file optional.
 EnvironmentFile=-/home/scott/solarcontrol/.env
 
 # Restart policy

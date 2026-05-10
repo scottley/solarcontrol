@@ -16,3 +16,6 @@ emporia_keys.json
 # Local deploy config
 deploy/.env.local
 
+# macOS metadata
+.DS_Store
+

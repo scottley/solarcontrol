@@ -7,6 +7,7 @@ requires-python = ">=3.13"
 dependencies = [
     "gpiozero>=2.0.1",
     "hoymiles-wifi>=0.5.5",
+    "influxdb-client>=1.49.0",
     "pyemvue>=0.18.9",
     "python-weather>=2.1.1",
 ]
