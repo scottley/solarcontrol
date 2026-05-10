@@ -96,7 +96,7 @@ def _read_blocking(lat: float, lon: float, user_agent: str, location_name: str) 
     metrics: dict[str, float] = {}
     text: dict[str, str] = {}
 
-    # ---- Current observation ----
+    # ---- Current observation (from nearest station; real measurements) ----
     try:
         stations = _http_get_json(pts["observationStations"], user_agent)["features"]
         if stations:
@@ -111,12 +111,30 @@ def _read_blocking(lat: float, lon: float, user_agent: str, location_name: str) 
             # Wind speed comes in km/h *not* m/s on the API. Convert to mph.
             wind_kmh = _val(obs.get("windSpeed"))
             _put(metrics, "current.wind_speed_mph", None if wind_kmh is None else wind_kmh * 0.621371)
+            # Station's textDescription is a fallback; the gridded hourly forecast
+            # below is preferred since it's localized to our exact lat/lon.
             if obs.get("textDescription"):
                 text["current.kind"] = obs["textDescription"]
     except (urllib.error.URLError, TimeoutError) as e:
         log.warning("nws: current observation fetch failed (will continue with forecast): %s", e)
     except Exception:
         log.exception("nws: current observation fetch failed unexpectedly")
+
+    # ---- Hourly forecast: prefer for sky conditions (gridded to our lat/lon) ----
+    try:
+        hourly = _http_get_json(pts["forecastHourly"], user_agent)["properties"]
+        hourly_periods = hourly.get("periods", [])
+        if hourly_periods:
+            cur = hourly_periods[0]
+            if cur.get("shortForecast"):
+                text["current.kind"] = cur["shortForecast"]
+            pop = (cur.get("probabilityOfPrecipitation") or {}).get("value")
+            if pop is not None:
+                metrics["current.precip_probability"] = float(pop)
+    except (urllib.error.URLError, TimeoutError) as e:
+        log.warning("nws: hourly forecast fetch failed (keeping station obs for current.kind): %s", e)
+    except Exception:
+        log.exception("nws: hourly forecast fetch failed unexpectedly")
 
     # ---- Forecast (daytime periods only -> d0/d1/d2/...) ----
     try:
