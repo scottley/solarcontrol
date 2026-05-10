@@ -24,18 +24,23 @@ warn(){ printf '\033[1;33m[svc]\033[0m %s\n' "$*"; }
 # ---------------------------------------------------------------------------
 # 1) InfluxDB v2 OSS via the official InfluxData apt repo
 # ---------------------------------------------------------------------------
-if ! command -v influx >/dev/null 2>&1 || ! systemctl list-unit-files | grep -q '^influxdb.service'; then
+INFLUX_LIST=/etc/apt/sources.list.d/influxdata.list
+INFLUX_KEYRING=/etc/apt/keyrings/influxdata-archive.gpg
+
+if [[ ! -f "${INFLUX_LIST}" ]]; then
     log "Adding InfluxData apt repo"
     sudo install -m 0755 -d /etc/apt/keyrings
+    sudo rm -f "${INFLUX_KEYRING}"
     curl -fsSL https://repos.influxdata.com/influxdata-archive.key \
-        | sudo gpg --dearmor -o /etc/apt/keyrings/influxdata-archive.gpg
-    sudo chmod 0644 /etc/apt/keyrings/influxdata-archive.gpg
+        | sudo gpg --yes --batch --dearmor -o "${INFLUX_KEYRING}"
+    sudo chmod 0644 "${INFLUX_KEYRING}"
     DISTRO_CODENAME="$(. /etc/os-release && echo "${VERSION_CODENAME}")"
-    echo "deb [signed-by=/etc/apt/keyrings/influxdata-archive.gpg] https://repos.influxdata.com/debian ${DISTRO_CODENAME} stable" \
-        | sudo tee /etc/apt/sources.list.d/influxdata.list >/dev/null
+    echo "deb [signed-by=${INFLUX_KEYRING}] https://repos.influxdata.com/debian ${DISTRO_CODENAME} stable" \
+        | sudo tee "${INFLUX_LIST}" >/dev/null
     sudo apt-get update -y
-    sudo apt-get install -y influxdb2 influxdb2-cli
 fi
+# apt-get install is itself idempotent — runs cheaply if already installed.
+sudo apt-get install -y influxdb2 influxdb2-cli
 
 log "Enabling and starting influxdb"
 sudo systemctl enable --now influxdb
@@ -123,19 +128,22 @@ fi
 # ---------------------------------------------------------------------------
 # 5) Grafana via the official Grafana apt repo
 # ---------------------------------------------------------------------------
-if ! command -v grafana-server >/dev/null 2>&1; then
+GRAFANA_LIST=/etc/apt/sources.list.d/grafana.list
+GRAFANA_KEYRING=/etc/apt/keyrings/grafana.gpg
+
+if [[ ! -f "${GRAFANA_LIST}" ]]; then
     log "Adding Grafana apt repo"
     sudo install -m 0755 -d /etc/apt/keyrings
-    # gpg --dearmor writes 0600 by default; force it readable so apt's _apt user can verify.
-    sudo rm -f /etc/apt/keyrings/grafana.gpg
+    sudo rm -f "${GRAFANA_KEYRING}"
     curl -fsSL https://apt.grafana.com/gpg.key \
-        | sudo gpg --dearmor -o /etc/apt/keyrings/grafana.gpg
-    sudo chmod 0644 /etc/apt/keyrings/grafana.gpg
-    echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main" \
-        | sudo tee /etc/apt/sources.list.d/grafana.list >/dev/null
+        | sudo gpg --yes --batch --dearmor -o "${GRAFANA_KEYRING}"
+    # gpg --dearmor writes 0600 by default; force readable so apt's _apt user can verify.
+    sudo chmod 0644 "${GRAFANA_KEYRING}"
+    echo "deb [signed-by=${GRAFANA_KEYRING}] https://apt.grafana.com stable main" \
+        | sudo tee "${GRAFANA_LIST}" >/dev/null
     sudo apt-get update -y
-    sudo apt-get install -y grafana
 fi
+sudo apt-get install -y grafana
 
 # ---------------------------------------------------------------------------
 # 6) Provision Grafana datasource + dashboard from the repo.
