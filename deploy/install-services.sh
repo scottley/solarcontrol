@@ -29,6 +29,7 @@ if ! command -v influx >/dev/null 2>&1 || ! systemctl list-unit-files | grep -q 
     sudo install -m 0755 -d /etc/apt/keyrings
     curl -fsSL https://repos.influxdata.com/influxdata-archive.key \
         | sudo gpg --dearmor -o /etc/apt/keyrings/influxdata-archive.gpg
+    sudo chmod 0644 /etc/apt/keyrings/influxdata-archive.gpg
     DISTRO_CODENAME="$(. /etc/os-release && echo "${VERSION_CODENAME}")"
     echo "deb [signed-by=/etc/apt/keyrings/influxdata-archive.gpg] https://repos.influxdata.com/debian ${DISTRO_CODENAME} stable" \
         | sudo tee /etc/apt/sources.list.d/influxdata.list >/dev/null
@@ -119,8 +120,11 @@ chmod 600 "${ENV_FILE}"
 if ! command -v grafana-server >/dev/null 2>&1; then
     log "Adding Grafana apt repo"
     sudo install -m 0755 -d /etc/apt/keyrings
+    # gpg --dearmor writes 0600 by default; force it readable so apt's _apt user can verify.
+    sudo rm -f /etc/apt/keyrings/grafana.gpg
     curl -fsSL https://apt.grafana.com/gpg.key \
         | sudo gpg --dearmor -o /etc/apt/keyrings/grafana.gpg
+    sudo chmod 0644 /etc/apt/keyrings/grafana.gpg
     echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main" \
         | sudo tee /etc/apt/sources.list.d/grafana.list >/dev/null
     sudo apt-get update -y
