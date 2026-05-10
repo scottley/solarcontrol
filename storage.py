@@ -45,10 +45,13 @@ def vue_points(channels, ts: datetime | None = None) -> list[Point]:
         p = (
             Point("vue")
             .tag("gid", str(c.gid))
-            .tag("channel", str(c.channel))
+            .tag("channel", c.channel_num)
+            .tag("is_main", "1" if c.is_main else "0")
             .tag("device", c.device_name)
             .tag("name", c.channel_name)
             .field("usage_kwh", float(c.usage_kwh))
+            # Convert to instantaneous-equivalent watts (kWh/min * 60 -> kW * 1000).
+            .field("power_w", float(c.usage_kwh) * 60_000.0)
             .time(t)
         )
         out.append(p)

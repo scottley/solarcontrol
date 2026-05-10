@@ -64,8 +64,12 @@ async def _poll_vue(cfg: Config, storage: Storage, stop: asyncio.Event) -> None:
             # pyemvue is sync; run in a thread so we don't block other pollers.
             channels = await asyncio.to_thread(vue.read, cfg.emporia_keys_file)
             storage.write(vue_points(channels))
-            total = sum(c.usage_kwh for c in channels if c.channel_name != "Balance")
-            log.info("vue ok channels=%d total_kwh=%.4f", len(channels), total)
+            # Per-device "Mains" reading — the only one that's an authoritative
+            # device-level total. Summing all channels would double-count (Mains
+            # already equals individual circuits + Balance for that device).
+            mains = [(c.device_name, c.usage_kwh * 60_000.0) for c in channels if c.is_main]
+            mains_str = ", ".join(f"{name}={w:.0f}W" for name, w in mains) or "(none)"
+            log.info("vue ok channels=%d mains: %s", len(channels), mains_str)
         except FileNotFoundError:
             log.error("vue: %s not found; skipping until present", cfg.emporia_keys_file)
         except Exception:
@@ -78,13 +82,19 @@ async def _poll_weather(cfg: Config, storage: Storage, stop: asyncio.Event) -> N
     log.info("weather poller started: every %ds", cfg.weather_interval_s)
     while not stop.is_set():
         try:
-            r = await weather.read(cfg.weather_location)
+            r = await weather.read(
+                lat=cfg.weather_lat,
+                lon=cfg.weather_lon,
+                user_agent=cfg.weather_user_agent,
+                location_name=cfg.weather_location_name,
+            )
             if r is not None:
                 storage.write([weather_point(r.location, r.metrics, r.text)])
                 log.info(
-                    "weather ok temp=%.1fF kind=%s",
+                    "weather ok temp=%.1fF kind=%s d1_high=%.0fF",
                     r.metrics.get("current.temperature_f", float("nan")),
                     r.text.get("current.kind", ""),
+                    r.metrics.get("forecast_d1.high_f", float("nan")),
                 )
         except Exception:
             log.exception("weather poll failed")

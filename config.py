@@ -26,6 +26,16 @@ def _env_int(name: str, default: int) -> int:
         raise ValueError(f"env {name}={raw!r} is not an int") from e
 
 
+def _env_float(name: str, default: float) -> float:
+    raw = os.environ.get(name)
+    if raw is None or raw == "":
+        return default
+    try:
+        return float(raw)
+    except ValueError as e:
+        raise ValueError(f"env {name}={raw!r} is not a float") from e
+
+
 @dataclass(frozen=True)
 class Config:
     # ---- Polling intervals (seconds). Each source loops independently. ----
@@ -40,8 +50,14 @@ class Config:
     # Tokens are stored in this file; pyemvue rotates them in place.
     emporia_keys_file: str = "emporia_keys.json"
 
-    # ---- Weather ----
-    weather_location: str = "Jamestown, Missouri, United States"
+    # ---- Weather (NWS, api.weather.gov) ----
+    # Coordinates of the site. Default is Jamestown, MO.
+    weather_lat: float = 38.7587
+    weather_lon: float = -92.4877
+    # Friendly name used as the Influx `location` tag.
+    weather_location_name: str = "Jamestown, Missouri"
+    # NWS requires a descriptive User-Agent. Identify the app and a contact.
+    weather_user_agent: str = "solarcontrol/1.0 (set WEATHER_USER_AGENT to your contact info)"
 
     # ---- InfluxDB ----
     influx_url: str = "http://127.0.0.1:8086"
@@ -58,6 +74,8 @@ class Config:
             envname = f.name.upper()
             if f.type is int or f.type == "int":
                 kwargs[f.name] = _env_int(envname, f.default)  # type: ignore[arg-type]
+            elif f.type is float or f.type == "float":
+                kwargs[f.name] = _env_float(envname, f.default)  # type: ignore[arg-type]
             else:
                 kwargs[f.name] = _env(envname, f.default)  # type: ignore[arg-type]
         return cls(**kwargs)  # type: ignore[arg-type]
