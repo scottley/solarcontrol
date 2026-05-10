@@ -31,6 +31,17 @@ class ChannelReading:
     usage_kwh: float
 
 
+@dataclass(frozen=True)
+class ChargerReading:
+    gid: int
+    device_name: str        # resolved from the device list; "" if unknown
+    on: bool                # charger_on
+    charging_rate_a: int    # commanded rate in amps
+    max_charging_rate_a: int
+    status: str             # e.g. "ChargingComplete", "InProgress", "" if absent
+    fault_text: str
+
+
 def _login(keys_path: str) -> pyemvue.PyEmVue:
     with open(keys_path) as f:
         data = json.load(f)
@@ -90,6 +101,35 @@ def read(keys_path: str, include_devices: set[str] | None = None) -> list[Channe
         if dropped:
             log.debug("vue: dropped %d channels not on the allowlist", dropped)
 
+    return out
+
+
+def read_chargers() -> list[ChargerReading]:
+    """Read EVSE state for every charger on the account.
+
+    Requires that `read()` has been called at least once in this process (so the
+    PyEmVue client is logged in and the device name lookup is populated).
+    """
+    if _client is None or _device_info is None:
+        # Defer to read() which both logs in and refreshes device_info.
+        raise RuntimeError("vue.read() must be called before vue.read_chargers()")
+
+    _, chargers = _client.get_devices_status()
+    out: list[ChargerReading] = []
+    for ch in chargers:
+        dev = _device_info.get(ch.device_gid)
+        name = getattr(dev, "device_name", "") if dev else ""
+        out.append(
+            ChargerReading(
+                gid=ch.device_gid,
+                device_name=name,
+                on=bool(ch.charger_on),
+                charging_rate_a=int(ch.charging_rate or 0),
+                max_charging_rate_a=int(ch.max_charging_rate or 0),
+                status=str(ch.status or ""),
+                fault_text=str(ch.fault_text or ""),
+            )
+        )
     return out
 
 

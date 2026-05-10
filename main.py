@@ -18,6 +18,7 @@ from config import Config
 from storage import (
     InfluxStorage,
     Storage,
+    charger_points,
     hoymiles_point,
     vue_points,
     weather_point,
@@ -72,6 +73,17 @@ async def _poll_vue(cfg: Config, storage: Storage, stop: asyncio.Event) -> None:
             mains = [(c.device_name, c.usage_kwh * 60_000.0) for c in channels if c.is_main]
             mains_str = ", ".join(f"{name}={w:.0f}W" for name, w in mains) or "(none)"
             log.info("vue ok channels=%d mains: %s", len(channels), mains_str)
+
+            # EVSE state — separate API call. Includes commanded rate (A) and on/off.
+            chargers = await asyncio.to_thread(vue.read_chargers)
+            if chargers:
+                storage.write(charger_points(chargers))
+                ev_str = ", ".join(
+                    f"{c.device_name or c.gid}={'ON' if c.on else 'OFF'}@{c.charging_rate_a}A"
+                    f"/{c.max_charging_rate_a}A ({c.status or '-'})"
+                    for c in chargers
+                )
+                log.info("evse ok: %s", ev_str)
         except FileNotFoundError:
             log.error("vue: %s not found; skipping until present", cfg.emporia_keys_file)
         except Exception:

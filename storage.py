@@ -58,6 +58,26 @@ def vue_points(channels, ts: datetime | None = None) -> list[Point]:
     return out
 
 
+def charger_points(chargers, ts: datetime | None = None) -> list[Point]:
+    """One point per charger, written to the `evse` measurement."""
+    t = ts or now_utc()
+    out: list[Point] = []
+    for c in chargers:
+        p = (
+            Point("evse")
+            .tag("gid", str(c.gid))
+            .tag("device", c.device_name or str(c.gid))
+            .field("on", 1.0 if c.on else 0.0)
+            .field("charging_rate_a", float(c.charging_rate_a))
+            .field("max_charging_rate_a", float(c.max_charging_rate_a))
+            .field("status", c.status)
+            .field("fault_text", c.fault_text)
+            .time(t)
+        )
+        out.append(p)
+    return out
+
+
 def weather_point(location: str, metrics: dict[str, float], text: dict[str, str], ts: datetime | None = None) -> Point:
     p = Point("weather").tag("location", location).time(ts or now_utc())
     for k, v in metrics.items():

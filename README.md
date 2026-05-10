@@ -83,7 +83,20 @@ Open Grafana → Dashboards → Browse → "solarcontrol". The starter dashboard
 3. **Battery SoC time series** + **outside temperature time series**.
 4. **Circuit usage bar chart**: top circuits on Main Panel by mean wattage in the last hour.
 
-Provisioning is *file-driven*. `allowUiUpdates: true` is set in the provider, so editing in the UI is allowed, but unless you export the modified JSON back to `grafana/dashboards/solarcontrol.json` and commit it, your edits will be lost on the next `install-services.sh` run.
+Provisioning is *file-driven*. `allowUiUpdates: true` is set in the provider, so editing in the UI is allowed, but the file is the source of truth — if the file changes (e.g. on next `install-services.sh` run), Grafana re-syncs from it. Capture UI edits with `make dashboard-pull`:
+
+```bash
+make dashboard-pull    # GET /api/dashboards/uid/solarcontrol -> grafana/dashboards/solarcontrol.json
+git diff               # see what changed
+git commit && git push
+```
+
+`dashboard-pull` reads `GRAFANA_URL` and `GRAFANA_TOKEN` from `deploy/.env.local`. Create the token once:
+
+1. Grafana → Administration → Users and access → **Service accounts**.
+2. **Add service account** → name `solarcontrol-export` → role **Editor**.
+3. On the new account: **Add service account token** → name it, copy the value.
+4. Paste into `deploy/.env.local` as `GRAFANA_TOKEN=...`.
 
 The dashboard's queries assume your Vue device is named exactly `Main Panel` and the EVSE channel on it is named `Meggy`. If those names differ in your Emporia app, edit the Flux filters in `solarcontrol.json` (search for `Main Panel` / `Meggy`) and re-deploy:
 

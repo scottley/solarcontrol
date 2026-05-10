@@ -1,4 +1,4 @@
-.PHONY: deploy logs status restart ssh sync
+.PHONY: deploy logs status restart ssh sync dashboard-pull
 
 deploy:
 	@scripts/deploy.sh
@@ -17,3 +17,6 @@ ssh:
 
 sync:
 	@uv sync
+
+dashboard-pull:
+	@python3 tools/dashboard_pull.py
