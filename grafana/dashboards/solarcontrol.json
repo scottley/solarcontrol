@@ -554,6 +554,327 @@
       "type": "timeseries"
     },
     {
+      "id": 50,
+      "type": "stat",
+      "title": "Charger",
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 8,
+        "h": 4
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "solarcontrol-influx"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "solarcontrol-influx"
+          },
+          "query": "from(bucket: \"solarcontrol\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"evse\" and r._field == \"charging_rate_a\")\n  |> last()"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "amp",
+          "decimals": 0,
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "OFF",
+                  "color": "red"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 51,
+      "type": "stat",
+      "title": "EVSE Status",
+      "gridPos": {
+        "x": 8,
+        "y": 14,
+        "w": 8,
+        "h": 4
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "solarcontrol-influx"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "solarcontrol-influx"
+          },
+          "query": "from(bucket: \"solarcontrol\")\n  |> range(start: -10m)\n  |> filter(fn: (r) => r._measurement == \"evse\" and r._field == \"status\")\n  |> last()"
+        }
+      ],
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "wideLayout": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "ChargingComplete": {
+                  "text": "Complete",
+                  "color": "green",
+                  "index": 0
+                },
+                "InProgress": {
+                  "text": "Charging",
+                  "color": "yellow",
+                  "index": 1
+                },
+                "Stopped": {
+                  "text": "Stopped",
+                  "color": "red",
+                  "index": 2
+                },
+                "": {
+                  "text": "—",
+                  "color": "text",
+                  "index": 3
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "empty",
+                "result": {
+                  "text": "—",
+                  "color": "text"
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "—",
+                  "color": "text"
+                }
+              }
+            }
+          ],
+          "noValue": "—"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 52,
+      "type": "stat",
+      "title": "EVSE energy in window",
+      "gridPos": {
+        "x": 16,
+        "y": 14,
+        "w": 8,
+        "h": 4
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "solarcontrol-influx"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "solarcontrol-influx"
+          },
+          "query": "from(bucket: \"solarcontrol\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"vue\" and r._field == \"usage_kwh\" and r.device == \"Main Panel\" and r.name == \"Meggy\")\n  |> group()\n  |> sum()"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "kwatth",
+          "decimals": 2,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 53,
+      "type": "timeseries",
+      "title": "Charging amperage (commanded vs cap)",
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 24,
+        "h": 8
+      },
+      "datasource": {
+        "type": "influxdb",
+        "uid": "solarcontrol-influx"
+      },
+      "targets": [
+        {
+          "refId": "Commanded",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "solarcontrol-influx"
+          },
+          "query": "from(bucket: \"solarcontrol\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"evse\" and r._field == \"charging_rate_a\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> set(key: \"_field\", value: \"commanded\")"
+        },
+        {
+          "refId": "Cap",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "solarcontrol-influx"
+          },
+          "query": "from(bucket: \"solarcontrol\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"evse\" and r._field == \"max_charging_rate_a\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> set(key: \"_field\", value: \"cap\")"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "amp",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 5,
+            "showPoints": "never"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "commanded"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "purple"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "cap"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "gray"
+                }
+              },
+              {
+                "id": "custom.lineStyle",
+                "value": {
+                  "fill": "dash",
+                  "dash": [
+                    10,
+                    10
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
       "datasource": {
         "type": "influxdb",
         "uid": "solarcontrol-influx"
@@ -617,10 +938,10 @@
         }
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
         "x": 0,
-        "y": 14
+        "y": 26,
+        "w": 12,
+        "h": 8
       },
       "id": 20,
       "options": {
@@ -716,10 +1037,10 @@
         }
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
         "x": 12,
-        "y": 14
+        "y": 26,
+        "w": 12,
+        "h": 8
       },
       "id": 21,
       "options": {
@@ -801,10 +1122,10 @@
         }
       },
       "gridPos": {
-        "h": 10,
-        "w": 24,
         "x": 0,
-        "y": 22
+        "y": 34,
+        "w": 24,
+        "h": 10
       },
       "id": 30,
       "options": {
@@ -843,286 +1164,6 @@
       ],
       "title": "Circuit usage (last 1h avg)",
       "type": "barchart"
-    },
-    {
-      "id": 50,
-      "type": "stat",
-      "title": "Charger",
-      "gridPos": {
-        "x": 0,
-        "y": 32,
-        "w": 8,
-        "h": 4
-      },
-      "datasource": {
-        "type": "influxdb",
-        "uid": "solarcontrol-influx"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "influxdb",
-            "uid": "solarcontrol-influx"
-          },
-          "query": "from(bucket: \"solarcontrol\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"evse\" and r._field == \"charging_rate_a\")\n  |> last()"
-        }
-      ],
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "textMode": "value",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "amp",
-          "decimals": 0,
-          "mappings": [
-            {
-              "type": "value",
-              "options": {
-                "0": {
-                  "text": "OFF",
-                  "color": "red"
-                }
-              }
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "green",
-                "value": 1
-              }
-            ]
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "id": 51,
-      "type": "stat",
-      "title": "EVSE Status",
-      "gridPos": {
-        "x": 8,
-        "y": 32,
-        "w": 8,
-        "h": 4
-      },
-      "datasource": {
-        "type": "influxdb",
-        "uid": "solarcontrol-influx"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "influxdb",
-            "uid": "solarcontrol-influx"
-          },
-          "query": "from(bucket: \"solarcontrol\")\n  |> range(start: -10m)\n  |> filter(fn: (r) => r._measurement == \"evse\" and r._field == \"status\")\n  |> last()"
-        }
-      ],
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "textMode": "value",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "blue"
-          },
-          "mappings": [
-            {
-              "type": "value",
-              "options": {
-                "ChargingComplete": {
-                  "text": "Complete",
-                  "color": "green"
-                },
-                "InProgress": {
-                  "text": "Charging",
-                  "color": "yellow"
-                },
-                "Stopped": {
-                  "text": "Stopped",
-                  "color": "red"
-                }
-              }
-            }
-          ]
-        },
-        "overrides": []
-      }
-    },
-    {
-      "id": 52,
-      "type": "stat",
-      "title": "EVSE energy in window",
-      "gridPos": {
-        "x": 16,
-        "y": 32,
-        "w": 8,
-        "h": 4
-      },
-      "datasource": {
-        "type": "influxdb",
-        "uid": "solarcontrol-influx"
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "influxdb",
-            "uid": "solarcontrol-influx"
-          },
-          "query": "from(bucket: \"solarcontrol\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"vue\" and r._field == \"usage_kwh\" and r.device == \"Main Panel\" and r.name == \"Meggy\")\n  |> sum()"
-        }
-      ],
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "textMode": "value",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        }
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "kwatth",
-          "decimals": 2,
-          "color": {
-            "mode": "fixed",
-            "fixedColor": "purple"
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "id": 53,
-      "type": "timeseries",
-      "title": "Charging amperage (commanded vs cap)",
-      "gridPos": {
-        "x": 0,
-        "y": 36,
-        "w": 24,
-        "h": 8
-      },
-      "datasource": {
-        "type": "influxdb",
-        "uid": "solarcontrol-influx"
-      },
-      "targets": [
-        {
-          "refId": "Commanded",
-          "datasource": {
-            "type": "influxdb",
-            "uid": "solarcontrol-influx"
-          },
-          "query": "from(bucket: \"solarcontrol\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"evse\" and r._field == \"charging_rate_a\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> set(key: \"_field\", value: \"commanded\")"
-        },
-        {
-          "refId": "Cap",
-          "datasource": {
-            "type": "influxdb",
-            "uid": "solarcontrol-influx"
-          },
-          "query": "from(bucket: \"solarcontrol\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"evse\" and r._field == \"max_charging_rate_a\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> set(key: \"_field\", value: \"cap\")"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "amp",
-          "custom": {
-            "lineWidth": 2,
-            "fillOpacity": 5,
-            "showPoints": "never"
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "commanded"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "purple"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "cap"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "gray"
-                }
-              },
-              {
-                "id": "custom.lineStyle",
-                "value": {
-                  "fill": "dash",
-                  "dash": [
-                    10,
-                    10
-                  ]
-                }
-              }
-            ]
-          }
-        ]
-      },
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "calcs": [
-            "mean",
-            "max"
-          ]
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      }
     }
   ],
   "preload": false,
